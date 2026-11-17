@@ -1,13 +1,15 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Étape 1 : compilation avec le SDK .NET 8
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY Skolaris.csproj .
-RUN dotnet restore Skolaris.csproj
-COPY . .
-RUN dotnet publish Skolaris.csproj -c Release -o /app/publish /p:UseAppHost=false
+COPY SystemePlacement.Web/SystemePlacement.Web.csproj SystemePlacement.Web/
+RUN dotnet restore SystemePlacement.Web/SystemePlacement.Web.csproj
+COPY SystemePlacement.Web/ SystemePlacement.Web/
+RUN dotnet publish SystemePlacement.Web/SystemePlacement.Web.csproj -c Release -o /out
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Étape 2 : exécution avec le runtime ASP.NET 8
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/publish .
-ENV ASPNETCORE_ENVIRONMENT=Production
+COPY --from=build /out .
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Skolaris.dll"]
+# Le port est fourni par l'hébergeur via PORT (8080 par défaut)
+CMD ["sh", "-c", "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080} dotnet SystemePlacement.Web.dll"]
